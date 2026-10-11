@@ -387,3 +387,38 @@ select
 from cte
 group by season, product_id
 ORDER BY season;
+/*
+Q17. Yearly Revenue Trends by Store, Supplier, and Product with ROLLUP
+Use the ROLLUP operation to aggregate yearly revenue data by store, supplier, and product,
+enabling a comprehensive overview from individual product-level details up to total revenue per
+store. This query should provide an overview of cumulative and hierarchical sales figures.
+*/
+
+SELECT
+	datepart(year,order_date) as year,
+	case when GROUPING(store_name) = 1
+	then 'All store' else store_name 
+	end as store,
+	case when GROUPING(supplier_name) = 1
+	then 'All supplier' else supplier_name 
+	end as supplier,
+	case when GROUPING(f.product_id) = 1
+	then 'All product' else supplier_name 
+	end as product,
+	sum(sale_amount) as yearly_revenue
+FROM fact_sale f
+INNER JOIN dim_product p
+ON f.product_id = p.product_id 
+INNER JOIN dim_store s
+ON f.store_id = s.store_id 
+INNER JOIN dim_supplier sp 
+ON f.supplier_id = sp.supplier_id
+GROUP BY datepart(year,order_date),rollup(store_name,supplier_name,f.product_id);
+
+-- name of store having more than 1 supplier
+select
+store_id,
+count(distinct p.supplier_id) as no_of_suppliers
+from dim_product p
+group by store_id
+having count(distinct p.supplier_id) > 1;
